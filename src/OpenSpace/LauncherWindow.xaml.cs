@@ -15,8 +15,10 @@ public partial class LauncherWindow : Window
     private readonly MainWindow _overlay;
     private readonly HotKeyHelper _toggleHotKey;
     private readonly NotifyIcon _trayIcon;
+    private readonly UpdateService _updateService = new();
 
     private readonly List<HotkeyRow> _hotkeyRows = new();
+    private UpdateInfo? _availableUpdate;
 
     public LauncherWindow()
     {
@@ -31,6 +33,9 @@ public partial class LauncherWindow : Window
 
         BuildHotkeyRows();
         ApplyConfigToUi();
+
+        VersionText.Text = VersionInfo.CurrentVersion;
+        _ = CheckForUpdateAsync(silent: true);
 
         _trayIcon = new NotifyIcon
         {
@@ -184,10 +189,87 @@ public partial class LauncherWindow : Window
     {
         _isShuttingDown = true;
         _toggleHotKey.Dispose();
+        _updateService.Dispose();
         _trayIcon.Visible = false;
         _trayIcon.Dispose();
         _overlay.ForceClose();
         Application.Current.Shutdown();
+    }
+
+    private async Task CheckForUpdateAsync(bool silent)
+    {
+        CheckUpdateButton.IsEnabled = false;
+        UpdateStatusText.Text = "Проверка...";
+        UpdateStatusText.Foreground = System.Windows.Media.Brushes.Gray;
+        UpdateStatusText.Visibility = Visibility.Visible;
+
+        _availableUpdate = await _updateService.CheckForUpdateAsync();
+
+        CheckUpdateButton.IsEnabled = true;
+
+        if (_availableUpdate == null)
+        {
+            UpdateStatusText.Text = "Обновлений нет";
+            UpdateStatusText.Foreground = System.Windows.Media.Brushes.Green;
+            DownloadUpdateButton.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        UpdateStatusText.Text = $"Доступна {_availableUpdate.TagName}";
+        UpdateStatusText.Foreground = System.Windows.Media.Brushes.Orange;
+        DownloadUpdateButton.Visibility = Visibility.Visible;
+
+        if (!silent)
+        {
+            MessageBox.Show($"Доступна новая версия: {_availableUpdate.TagName}\n\nНажмите «Скачать обновление», чтобы загрузить установщик.",
+                "OpenSpace", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+    }
+
+    private async void CheckUpdateButton_Click(object sender, RoutedEventArgs e)
+    {
+        await CheckForUpdateAsync(silent: false);
+    }
+
+    private async void DownloadUpdateButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_availableUpdate == null)
+            return;
+
+        DownloadUpdateButton.Visibility = Visibility.Collapsed;
+        DownloadProgressBar.Visibility = Visibility.Visible;
+        UpdateStatusText.Text = "Загрузка...";
+
+        var progress = new Progress<double>(value =>
+        {
+            DownloadProgressBar.Value = value;
+        });
+
+        var installerPath = await _updateService.DownloadUpdateAsync(_availableUpdate, progress);
+
+        DownloadProgressBar.Visibility = Visibility.Collapsed;
+
+        if (string.IsNullOrEmpty(installerPath))
+        {
+            UpdateStatusText.Text = "Ошибка загрузки";
+            UpdateStatusText.Foreground = System.Windows.Media.Brushes.Red;
+            MessageBox.Show("Не удалось загрузить обновление. Проверьте подключение к интернету.",
+                "OpenSpace", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        UpdateStatusText.Text = "Загружено";
+        UpdateStatusText.Foreground = System.Windows.Media.Brushes.Green;
+
+        var result = MessageBox.Show(
+            $"Обновление загружено:\n{installerPath}\n\nЗапустить установщик сейчас?",
+            "OpenSpace", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+        if (result == MessageBoxResult.Yes)
+        {
+            _updateService.RunInstaller(installerPath);
+            ShutdownApp();
+        }
     }
 
     private void CheckConflicts()
