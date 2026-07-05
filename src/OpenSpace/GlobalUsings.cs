@@ -7,3 +7,4 @@ global using ComboBox = System.Windows.Controls.ComboBox;
 global using Orientation = System.Windows.Controls.Orientation;
 global using System.IO;
 global using System.Windows.Interop;
+global using MessageBox = System.Windows.MessageBox;

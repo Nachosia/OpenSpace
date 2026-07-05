@@ -6,7 +6,6 @@ using System.Windows.Input;
 using OpenSpace.Core;
 using OpenSpace.Input;
 using OpenSpace.Win32;
-using MessageBox = System.Windows.MessageBox;
 
 namespace OpenSpace;
 
@@ -187,7 +186,7 @@ public partial class LauncherWindow : Window
         _toggleHotKey.Dispose();
         _trayIcon.Visible = false;
         _trayIcon.Dispose();
-        _overlay.Close();
+        _overlay.ForceClose();
         Application.Current.Shutdown();
     }
 

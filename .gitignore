@@ -33,3 +33,4 @@ publish/
 installer/build/
 publish-installer/
 *.zip
+test-portable/

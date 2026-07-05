@@ -21,6 +21,7 @@ public partial class MainWindow : Window
     private System.Windows.Threading.DispatcherTimer? _renderTimer;
     private bool _isDragging;
     private Point _lastMousePosition;
+    private bool _allowClose;
 
     public MainWindow()
     {
@@ -57,12 +58,21 @@ public partial class MainWindow : Window
 
     public void ShowOverlay()
     {
-        RefreshWindows();
-        _navigation.FocusSelected();
+        try
+        {
+            RefreshWindows();
+            _navigation.FocusSelected();
 
-        Show();
-        Activate();
-        UpdateThumbnails();
+            Show();
+            Activate();
+            UpdateLayout();
+            UpdateThumbnails();
+        }
+        catch (Exception ex)
+        {
+            App.LogException(ex);
+            throw;
+        }
     }
 
     public void HideOverlay()
@@ -76,16 +86,23 @@ public partial class MainWindow : Window
 
     public void RefreshWindows()
     {
-        foreach (var window in _canvas.Windows)
+        try
         {
-            _thumbnailManager.UnregisterThumbnail(window);
+            foreach (var window in _canvas.Windows)
+            {
+                _thumbnailManager.UnregisterThumbnail(window);
+            }
+
+            _canvas.LoadWindows(_enumerator.Enumerate());
+
+            foreach (var window in _canvas.Windows)
+            {
+                _thumbnailManager.RegisterThumbnail(window);
+            }
         }
-
-        _canvas.LoadWindows(_enumerator.Enumerate());
-
-        foreach (var window in _canvas.Windows)
+        catch (Exception ex)
         {
-            _thumbnailManager.RegisterThumbnail(window);
+            App.LogException(ex);
         }
     }
 
@@ -181,9 +198,18 @@ public partial class MainWindow : Window
 
     protected override void OnClosing(CancelEventArgs e)
     {
-        e.Cancel = true;
-        HideOverlay();
+        if (!_allowClose)
+        {
+            e.Cancel = true;
+            HideOverlay();
+        }
         base.OnClosing(e);
+    }
+
+    public void ForceClose()
+    {
+        _allowClose = true;
+        Close();
     }
 
     protected override void OnClosed(EventArgs e)
