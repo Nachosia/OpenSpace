@@ -1,8 +1,6 @@
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace OpenSpace.Core;
 
@@ -10,53 +8,44 @@ internal sealed class UpdateInfo
 {
     public Version Version { get; }
     public string TagName { get; }
-    public string HtmlUrl { get; }
-    public string? SetupDownloadUrl { get; }
-    public string? PortableDownloadUrl { get; }
-    public string? SetupFileName { get; }
-    public string? PortableFileName { get; }
+    public string SetupDownloadUrl { get; }
+    public string SetupFileName { get; }
 
-    public UpdateInfo(Version version, string tagName, string htmlUrl, IReadOnlyList<GitHubAsset> assets)
+    public UpdateInfo(Version version, string tagName)
     {
         Version = version;
         TagName = tagName;
-        HtmlUrl = htmlUrl;
 
-        var setupAsset = assets.FirstOrDefault(a => a.Name?.EndsWith("-setup.exe", StringComparison.OrdinalIgnoreCase) == true);
-        var portableAsset = assets.FirstOrDefault(a => a.Name?.EndsWith("-portable.zip", StringComparison.OrdinalIgnoreCase) == true);
-
-        SetupDownloadUrl = setupAsset?.BrowserDownloadUrl;
-        SetupFileName = setupAsset?.Name;
-        PortableDownloadUrl = portableAsset?.BrowserDownloadUrl;
-        PortableFileName = portableAsset?.Name;
+        var versionString = tagName.TrimStart('v', 'V');
+        SetupFileName = $"OpenSpace-{versionString}-setup.exe";
+        SetupDownloadUrl = $"https://github.com/{VersionInfo.RepositoryOwner}/{VersionInfo.RepositoryName}/releases/download/{tagName}/{SetupFileName}";
     }
 }
 
 internal sealed class UpdateService : IDisposable
 {
+    private static readonly string VersionUrl = $"https://raw.githubusercontent.com/{VersionInfo.RepositoryOwner}/{VersionInfo.RepositoryName}/master/latest-version.txt";
+
     private readonly HttpClient _httpClient;
 
     public UpdateService()
     {
         _httpClient = new HttpClient();
         _httpClient.DefaultRequestHeaders.Add("User-Agent", $"OpenSpace/{VersionInfo.CurrentVersion}");
-        _httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.github+json");
     }
 
     public async Task<UpdateInfo?> CheckForUpdateAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _httpClient.GetAsync(VersionInfo.GitHubReleasesApiUrl, cancellationToken);
+            var response = await _httpClient.GetAsync(VersionUrl, cancellationToken);
             response.EnsureSuccessStatusCode();
 
-            var json = await response.Content.ReadAsStringAsync(cancellationToken);
-            var release = JsonSerializer.Deserialize<GitHubRelease>(json);
-
-            if (release?.TagName == null)
+            var tagName = (await response.Content.ReadAsStringAsync(cancellationToken)).Trim();
+            if (string.IsNullOrWhiteSpace(tagName))
                 return null;
 
-            var tagVersion = ParseVersion(release.TagName);
+            var tagVersion = ParseVersion(tagName);
             if (tagVersion == null)
                 return null;
 
@@ -64,7 +53,7 @@ internal sealed class UpdateService : IDisposable
             if (tagVersion <= currentVersion)
                 return null;
 
-            return new UpdateInfo(tagVersion, release.TagName, release.HtmlUrl ?? VersionInfo.GitHubReleasesPageUrl, release.Assets ?? new List<GitHubAsset>());
+            return new UpdateInfo(tagVersion, tagName);
         }
         catch (Exception ex)
         {
@@ -75,9 +64,6 @@ internal sealed class UpdateService : IDisposable
 
     public async Task<string?> DownloadUpdateAsync(UpdateInfo update, IProgress<double>? progress = null, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrEmpty(update.SetupDownloadUrl) || string.IsNullOrEmpty(update.SetupFileName))
-            return null;
-
         var tempPath = Path.Combine(Path.GetTempPath(), update.SetupFileName);
 
         try
@@ -142,25 +128,4 @@ internal sealed class UpdateService : IDisposable
     {
         _httpClient.Dispose();
     }
-}
-
-internal sealed class GitHubRelease
-{
-    [JsonPropertyName("tag_name")]
-    public string? TagName { get; set; }
-
-    [JsonPropertyName("html_url")]
-    public string? HtmlUrl { get; set; }
-
-    [JsonPropertyName("assets")]
-    public List<GitHubAsset>? Assets { get; set; }
-}
-
-internal sealed class GitHubAsset
-{
-    [JsonPropertyName("name")]
-    public string? Name { get; set; }
-
-    [JsonPropertyName("browser_download_url")]
-    public string? BrowserDownloadUrl { get; set; }
 }

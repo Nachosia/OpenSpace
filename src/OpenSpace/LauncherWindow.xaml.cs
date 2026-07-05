@@ -210,7 +210,7 @@ public partial class LauncherWindow : Window
 
         if (_availableUpdate == null)
         {
-            UpdateStatusText.Text = "Обновлений нет";
+            UpdateStatusText.Text = silent ? "Обновлений нет" : "Не удалось проверить / обновлений нет";
             UpdateStatusText.Foreground = System.Windows.Media.Brushes.Green;
             DownloadUpdateButton.Visibility = Visibility.Collapsed;
             return;
