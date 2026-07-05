@@ -105,4 +105,32 @@ public sealed class SpatialCanvas
         _windows.Clear();
         SelectedWindow = null;
     }
+
+    public Rect2 GetBounds()
+    {
+        if (_windows.Count == 0)
+            return new Rect2(Vector2.Zero, Vector2.Zero);
+
+        float minX = _windows.Min(w => w.PlanePosition.X);
+        float minY = _windows.Min(w => w.PlanePosition.Y);
+        float maxX = _windows.Max(w => w.PlanePosition.X + w.PlaneSize.X);
+        float maxY = _windows.Max(w => w.PlanePosition.Y + w.PlaneSize.Y);
+
+        return new Rect2(new Vector2(minX, minY), new Vector2(maxX - minX, maxY - minY));
+    }
+}
+
+public readonly struct Rect2
+{
+    public Vector2 Position { get; }
+    public Vector2 Size { get; }
+    public float Width => Size.X;
+    public float Height => Size.Y;
+    public Vector2 Center => Position + Size / 2;
+
+    public Rect2(Vector2 position, Vector2 size)
+    {
+        Position = position;
+        Size = size;
+    }
 }

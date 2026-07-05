@@ -51,6 +51,20 @@ public sealed class Camera
         _isAnimating = false;
     }
 
+    public void FitToBounds(Rect2 bounds, int viewportWidth, int viewportHeight, float padding = 0.1f)
+    {
+        if (bounds.Width <= 0 || bounds.Height <= 0 || viewportWidth <= 0 || viewportHeight <= 0)
+            return;
+
+        var center = bounds.Center;
+        float zoomX = viewportWidth / (bounds.Width * (1 + padding));
+        float zoomY = viewportHeight / (bounds.Height * (1 + padding));
+        float targetZoom = Math.Min(zoomX, zoomY);
+
+        SetPosition(center);
+        SetZoom(Math.Clamp(targetZoom, 0.1f, 3.0f));
+    }
+
     public void ZoomBy(float factor)
     {
         _targetZoom = Math.Clamp(_targetZoom * factor, 0.1f, 3.0f);

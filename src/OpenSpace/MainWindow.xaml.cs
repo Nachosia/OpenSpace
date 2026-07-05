@@ -46,6 +46,11 @@ public partial class MainWindow : Window
         _navigation?.UpdateConfig(config);
     }
 
+    public void TrackWindow(IntPtr hwnd)
+    {
+        _enumerator.TrackOwnWindow(hwnd);
+    }
+
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
         var helper = new WindowInteropHelper(this);
@@ -70,6 +75,13 @@ public partial class MainWindow : Window
         {
             RefreshWindows();
             _navigation.FocusSelected();
+
+            int width = (int)ActualWidth;
+            int height = (int)ActualHeight;
+            if (_canvas.Windows.Count > 0 && width > 0 && height > 0)
+            {
+                _camera.FitToBounds(_canvas.GetBounds(), width, height);
+            }
 
             Show();
             Activate();

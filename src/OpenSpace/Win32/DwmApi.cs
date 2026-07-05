@@ -16,6 +16,11 @@ internal static class DwmApi
     [DllImport("dwmapi.dll")]
     public static extern int DwmUnregisterThumbnail(IntPtr hThumbnailId);
 
+    [DllImport("dwmapi.dll")]
+    public static extern int DwmGetWindowAttribute(IntPtr hwnd, int dwAttribute, out int pvAttribute, int cbAttribute);
+
+    public const int DWMWA_CLOAKED = 14;
+
     public const int DWM_TNP_RECTDESTINATION = 0x00000001;
     public const int DWM_TNP_RECTSOURCE = 0x00000002;
     public const int DWM_TNP_OPACITY = 0x00000004;

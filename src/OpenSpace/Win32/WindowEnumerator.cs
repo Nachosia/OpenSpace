@@ -45,6 +45,9 @@ internal sealed class WindowEnumerator : IDisposable
             if ((exStyle & NativeMethods.WS_EX_TOOLWINDOW) != 0)
                 return true;
 
+            if (IsWindowCloaked(hWnd))
+                return true;
+
             if (!_vdHelper.IsWindowOnCurrentVirtualDesktop(hWnd))
                 return true;
 
@@ -87,5 +90,18 @@ internal sealed class WindowEnumerator : IDisposable
     public void Dispose()
     {
         _vdHelper.Dispose();
+    }
+
+    private static bool IsWindowCloaked(IntPtr hWnd)
+    {
+        try
+        {
+            int hr = DwmApi.DwmGetWindowAttribute(hWnd, DwmApi.DWMWA_CLOAKED, out int cloaked, sizeof(int));
+            return hr >= 0 && cloaked != 0;
+        }
+        catch
+        {
+            return false;
+        }
     }
 }

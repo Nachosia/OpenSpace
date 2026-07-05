@@ -29,6 +29,7 @@ public partial class LauncherWindow : Window
 
         var helper = new WindowInteropHelper(this);
         helper.EnsureHandle();
+        _overlay.TrackWindow(helper.Handle);
         _toggleHotKey = new HotKeyHelper(this, 1);
 
         BuildHotkeyRows();

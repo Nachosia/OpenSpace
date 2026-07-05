@@ -51,11 +51,11 @@ internal sealed class DwmThumbnailManager : IDisposable
 
         var props = new DWM_THUMBNAIL_PROPERTIES
         {
-            dwFlags = DwmApi.DWM_TNP_RECTDESTINATION | DwmApi.DWM_TNP_VISIBLE | DwmApi.DWM_TNP_OPACITY,
+            dwFlags = DwmApi.DWM_TNP_RECTDESTINATION | DwmApi.DWM_TNP_VISIBLE | DwmApi.DWM_TNP_OPACITY | DwmApi.DWM_TNP_SOURCECLIENTAREAONLY,
             rcDestination = aspectRect,
             opacity = 255,
             fVisible = true,
-            fSourceClientAreaOnly = false
+            fSourceClientAreaOnly = true
         };
 
         DwmApi.DwmUpdateThumbnailProperties(window.ThumbnailHandle, ref props);
