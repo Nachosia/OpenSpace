@@ -1,0 +1,81 @@
+<Window x:Class="OpenSpace.LauncherWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:OpenSpace"
+        mc:Ignorable="d"
+        Title="OpenSpace Launcher"
+        Height="520"
+        Width="460"
+        ResizeMode="CanMinimize"
+        WindowStartupLocation="CenterScreen"
+        Closing="Window_Closing">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="OpenSpace Launcher"
+                   FontSize="24"
+                   FontWeight="Bold"
+                   Margin="0,0,0,10"/>
+
+        <TextBlock Grid.Row="1"
+                   Text="Настройте горячие клавиши, затем нажмите «Запустить OpenSpace»."
+                   TextWrapping="Wrap"
+                   Foreground="Gray"
+                   Margin="0,0,0,20"/>
+
+        <ScrollViewer Grid.Row="2"
+                      VerticalScrollBarVisibility="Auto"
+                      Margin="0,0,0,10">
+            <StackPanel x:Name="HotkeysPanel">
+                <!-- Hotkey rows will be generated here -->
+            </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="3"
+                    Orientation="Horizontal"
+                    Margin="0,0,0,10">
+            <CheckBox x:Name="StartMinimizedCheckBox"
+                      Content="Запускать свёрнутым в трей"
+                      Margin="0,0,20,0"/>
+            <CheckBox x:Name="CloseToTrayCheckBox"
+                      Content="Сворачивать в трей при закрытии"
+                      IsChecked="True"/>
+        </StackPanel>
+
+        <TextBlock Grid.Row="4"
+                   x:Name="ConflictText"
+                   TextWrapping="Wrap"
+                   Foreground="OrangeRed"
+                   Visibility="Collapsed"
+                   Margin="0,0,0,10"/>
+
+        <StackPanel Grid.Row="5"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right">
+            <Button x:Name="RefreshButton"
+                    Content="Обновить окна"
+                    Width="120"
+                    Margin="0,0,10,0"
+                    Click="RefreshButton_Click"/>
+            <Button x:Name="LaunchButton"
+                    Content="Запустить OpenSpace"
+                    Width="150"
+                    Margin="0,0,10,0"
+                    Click="LaunchButton_Click"/>
+            <Button x:Name="ExitButton"
+                    Content="Выход"
+                    Width="80"
+                    Click="ExitButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

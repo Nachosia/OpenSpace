@@ -1,0 +1,9 @@
+global using Application = System.Windows.Application;
+global using KeyEventArgs = System.Windows.Input.KeyEventArgs;
+global using MouseEventArgs = System.Windows.Input.MouseEventArgs;
+global using MouseButtonEventArgs = System.Windows.Input.MouseButtonEventArgs;
+global using Point = System.Windows.Point;
+global using ComboBox = System.Windows.Controls.ComboBox;
+global using Orientation = System.Windows.Controls.Orientation;
+global using System.IO;
+global using System.Windows.Interop;

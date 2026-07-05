@@ -1,4 +1,5 @@
 using OpenSpace.Core;
+using System.Numerics;
 using System.Windows.Input;
 
 namespace OpenSpace.Input;
@@ -7,53 +8,73 @@ internal sealed class NavigationController
 {
     private readonly SpatialCanvas _canvas;
     private readonly Camera _camera;
+    private AppConfig _config;
 
     public event Action? WindowActivated;
     public event Action? ExitRequested;
 
-    public NavigationController(SpatialCanvas canvas, Camera camera)
+    public NavigationController(SpatialCanvas canvas, Camera camera, AppConfig config)
     {
         _canvas = canvas;
         _camera = camera;
+        _config = config;
+    }
+
+    public void UpdateConfig(AppConfig config)
+    {
+        _config = config;
     }
 
     public void HandleKey(Key key, ModifierKeys modifiers)
     {
-        bool shift = (modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
-
-        switch (key)
+        if (_config.CloseOverlay.Matches(key, modifiers))
         {
-            case Key.Tab:
-                if (shift)
-                    _canvas.SelectPrevious();
-                else
-                    _canvas.SelectNext();
-                FocusSelected();
-                break;
+            ExitRequested?.Invoke();
+            return;
+        }
 
-            case Key.Left:
-                _camera.PanBy(new System.Numerics.Vector2(-100, 0));
-                break;
+        if (_config.ActivateWindow.Matches(key, modifiers))
+        {
+            WindowActivated?.Invoke();
+            return;
+        }
 
-            case Key.Right:
-                _camera.PanBy(new System.Numerics.Vector2(100, 0));
-                break;
+        if (_config.NextWindow.Matches(key, modifiers))
+        {
+            _canvas.SelectNext();
+            FocusSelected();
+            return;
+        }
 
-            case Key.Up:
-                _camera.PanBy(new System.Numerics.Vector2(0, -100));
-                break;
+        if (_config.PreviousWindow.Matches(key, modifiers))
+        {
+            _canvas.SelectPrevious();
+            FocusSelected();
+            return;
+        }
 
-            case Key.Down:
-                _camera.PanBy(new System.Numerics.Vector2(0, 100));
-                break;
+        if (_config.PanLeft.Matches(key, modifiers))
+        {
+            _camera.PanBy(new Vector2(-100, 0));
+            return;
+        }
 
-            case Key.Enter:
-                WindowActivated?.Invoke();
-                break;
+        if (_config.PanRight.Matches(key, modifiers))
+        {
+            _camera.PanBy(new Vector2(100, 0));
+            return;
+        }
 
-            case Key.Escape:
-                ExitRequested?.Invoke();
-                break;
+        if (_config.PanUp.Matches(key, modifiers))
+        {
+            _camera.PanBy(new Vector2(0, -100));
+            return;
+        }
+
+        if (_config.PanDown.Matches(key, modifiers))
+        {
+            _camera.PanBy(new Vector2(0, 100));
+            return;
         }
     }
 

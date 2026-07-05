@@ -1,9 +1,7 @@
+using System.ComponentModel;
 using System.Numerics;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Interop;
-using System.Windows.Media;
-using System.Windows.Threading;
 using OpenSpace.Core;
 using OpenSpace.Input;
 using OpenSpace.Rendering;
@@ -17,19 +15,26 @@ public partial class MainWindow : Window
     private readonly Camera _camera = new();
     private readonly WindowEnumerator _enumerator = new();
     private readonly DwmThumbnailManager _thumbnailManager = new();
-    private readonly NavigationController _navigation;
-    private HotKeyHelper? _hotKeyHelper;
+    private NavigationController _navigation = null!;
+    private AppConfig _config = new();
 
-    private DispatcherTimer? _renderTimer;
+    private System.Windows.Threading.DispatcherTimer? _renderTimer;
     private bool _isDragging;
     private Point _lastMousePosition;
 
     public MainWindow()
     {
         InitializeComponent();
-        _navigation = new NavigationController(_canvas, _camera);
+        _navigation = new NavigationController(_canvas, _camera, _config);
         _navigation.WindowActivated += OnWindowActivated;
         _navigation.ExitRequested += HideOverlay;
+        ApplyConfig(_config);
+    }
+
+    public void ApplyConfig(AppConfig config)
+    {
+        _config = config;
+        _navigation?.UpdateConfig(config);
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -40,35 +45,17 @@ public partial class MainWindow : Window
         _enumerator.TrackOwnWindow(hwnd);
         _thumbnailManager.SetDestinationHwnd(hwnd);
 
-        _hotKeyHelper = new HotKeyHelper(this, 1);
-        _hotKeyHelper!.Register(NativeMethods.MOD_WIN | NativeMethods.MOD_NOREPEAT, 0x4F); // Win+O
-        _hotKeyHelper.HotKeyPressed += OnToggleHotKey;
-
-        // Use a DispatcherTimer at 60Hz to update camera and thumbnail positions.
-        _renderTimer = new DispatcherTimer(DispatcherPriority.Render)
+        _renderTimer = new System.Windows.Threading.DispatcherTimer(System.Windows.Threading.DispatcherPriority.Render)
         {
             Interval = TimeSpan.FromMilliseconds(16)
         };
         _renderTimer.Tick += OnRenderTick;
         _renderTimer.Start();
 
-        // Start hidden; the hotkey shows the overlay.
         Hide();
     }
 
-    private void OnToggleHotKey()
-    {
-        if (IsVisible)
-        {
-            HideOverlay();
-        }
-        else
-        {
-            ShowOverlay();
-        }
-    }
-
-    private void ShowOverlay()
+    public void ShowOverlay()
     {
         RefreshWindows();
         _navigation.FocusSelected();
@@ -78,7 +65,7 @@ public partial class MainWindow : Window
         UpdateThumbnails();
     }
 
-    private void HideOverlay()
+    public void HideOverlay()
     {
         foreach (var window in _canvas.Windows)
         {
@@ -87,7 +74,7 @@ public partial class MainWindow : Window
         Hide();
     }
 
-    private void RefreshWindows()
+    public void RefreshWindows()
     {
         foreach (var window in _canvas.Windows)
         {
@@ -167,7 +154,6 @@ public partial class MainWindow : Window
         _lastMousePosition = e.GetPosition(this);
         CaptureMouse();
 
-        // Check if clicked on a window to select it.
         var worldPos = _camera.ScreenToWorld(_lastMousePosition, (int)ActualWidth, (int)ActualHeight);
         var window = _canvas.FindWindowAt(worldPos);
         if (window != null)
@@ -193,10 +179,16 @@ public partial class MainWindow : Window
         ReleaseMouseCapture();
     }
 
+    protected override void OnClosing(CancelEventArgs e)
+    {
+        e.Cancel = true;
+        HideOverlay();
+        base.OnClosing(e);
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         _renderTimer?.Stop();
-        _hotKeyHelper?.Dispose();
 
         foreach (var window in _canvas.Windows)
         {
