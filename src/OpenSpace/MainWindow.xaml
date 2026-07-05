@@ -1,0 +1,38 @@
+<Window x:Class="OpenSpace.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:OpenSpace"
+        mc:Ignorable="d"
+        Title="OpenSpace"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        WindowState="Maximized"
+        WindowStartupLocation="CenterScreen"
+        Topmost="True"
+        Background="#CC101010"
+        AllowsTransparency="True"
+        ShowInTaskbar="False"
+        KeyDown="Window_KeyDown"
+        MouseWheel="Window_MouseWheel"
+        MouseLeftButtonDown="Window_MouseLeftButtonDown"
+        MouseMove="Window_MouseMove"
+        MouseLeftButtonUp="Window_MouseLeftButtonUp"
+        Loaded="Window_Loaded">
+    <Grid>
+        <Rectangle x:Name="SelectionRectangle"
+                    Stroke="#FF00BFFF"
+                    StrokeThickness="3"
+                    Fill="Transparent"
+                    Visibility="Collapsed"/>
+
+        <TextBlock Text="OpenSpace&#x0A;Win+O: toggle | Tab/Shift+Tab: cycle | Arrows: pan | Enter: activate | Esc: close"
+                   Foreground="#80FFFFFF"
+                   FontSize="14"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Top"
+                   Margin="0,20,0,0"
+                   TextAlignment="Center"/>
+    </Grid>
+</Window>

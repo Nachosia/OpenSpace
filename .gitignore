@@ -1,0 +1,32 @@
+# Build outputs
+bin/
+obj/
+out/
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# NuGet
+*.nupkg
+packages/
+
+# WPF
+*.pfx
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Logs
+*.log
+
+# Publish
+publish/
