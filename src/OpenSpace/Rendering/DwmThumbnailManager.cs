@@ -42,16 +42,54 @@ internal sealed class DwmThumbnailManager : IDisposable
             return;
         }
 
+        // Maintain aspect ratio using the source window size.
+        var aspectRect = MaintainAspectRatio(window, destRect);
+
         var props = new DWM_THUMBNAIL_PROPERTIES
         {
             dwFlags = DwmApi.DWM_TNP_RECTDESTINATION | DwmApi.DWM_TNP_VISIBLE | DwmApi.DWM_TNP_OPACITY,
-            rcDestination = destRect,
+            rcDestination = aspectRect,
             opacity = 255,
             fVisible = true,
             fSourceClientAreaOnly = false
         };
 
         DwmApi.DwmUpdateThumbnailProperties(window.ThumbnailHandle, ref props);
+    }
+
+    private RECT MaintainAspectRatio(SpatialWindow window, RECT targetRect)
+    {
+        int sourceWidth = window.ScreenBounds.Width;
+        int sourceHeight = window.ScreenBounds.Height;
+
+        if (sourceWidth <= 0 || sourceHeight <= 0)
+            return targetRect;
+
+        float sourceAspect = (float)sourceWidth / sourceHeight;
+        int targetWidth = targetRect.Width;
+        int targetHeight = targetRect.Height;
+
+        if (targetHeight == 0)
+            return targetRect;
+
+        float targetAspect = (float)targetWidth / targetHeight;
+
+        int newWidth, newHeight;
+        if (targetAspect > sourceAspect)
+        {
+            newHeight = targetHeight;
+            newWidth = (int)(targetHeight * sourceAspect);
+        }
+        else
+        {
+            newWidth = targetWidth;
+            newHeight = (int)(targetWidth / sourceAspect);
+        }
+
+        int x = targetRect.Left + (targetWidth - newWidth) / 2;
+        int y = targetRect.Top + (targetHeight - newHeight) / 2;
+
+        return new RECT(x, y, x + newWidth, y + newHeight);
     }
 
     public void UnregisterThumbnail(SpatialWindow window)
@@ -79,7 +117,5 @@ internal sealed class DwmThumbnailManager : IDisposable
 
     public void Dispose()
     {
-        // Thumbnails are automatically unregistered when destination window closes,
-        // but explicit cleanup is good practice.
     }
 }

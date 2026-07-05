@@ -8,3 +8,4 @@ global using Orientation = System.Windows.Controls.Orientation;
 global using System.IO;
 global using System.Windows.Interop;
 global using MessageBox = System.Windows.MessageBox;
+global using Cursors = System.Windows.Input.Cursors;

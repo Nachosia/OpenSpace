@@ -27,7 +27,7 @@
                     Fill="Transparent"
                     Visibility="Collapsed"/>
 
-        <TextBlock Text="OpenSpace&#x0A;Win+O: toggle | Tab/Shift+Tab: cycle | Arrows: pan | Enter: activate | Esc: close"
+        <TextBlock Text="OpenSpace&#x0A;Win+\`: toggle | Tab/Shift+Tab: cycle | Ctrl+Shift+A: maximize | Enter: activate | Esc: close&#x0A;Arrows: pan | Right Ctrl+↑/↓: zoom | Drag edge: resize | Drag window: move"
                    Foreground="#80FFFFFF"
                    FontSize="14"
                    HorizontalAlignment="Center"

@@ -20,8 +20,15 @@ public partial class MainWindow : Window
 
     private System.Windows.Threading.DispatcherTimer? _renderTimer;
     private bool _isDragging;
+    private bool _isResizing;
     private Point _lastMousePosition;
     private bool _allowClose;
+    private SpatialWindow? _resizeWindow;
+    private ResizeHandle _resizeHandle;
+    private Vector2 _resizeStartPosition;
+    private Vector2 _resizeStartSize;
+
+    private const double ResizeHandleSize = 12;
 
     public MainWindow()
     {
@@ -29,6 +36,7 @@ public partial class MainWindow : Window
         _navigation = new NavigationController(_canvas, _camera, _config);
         _navigation.WindowActivated += OnWindowActivated;
         _navigation.ExitRequested += HideOverlay;
+        _navigation.MaximizeSelected += OnMaximizeSelected;
         ApplyConfig(_config);
     }
 
@@ -153,47 +161,200 @@ public partial class MainWindow : Window
         WindowActivator.Activate(selected.Hwnd);
     }
 
+    private void OnMaximizeSelected()
+    {
+        var selected = _canvas.SelectedWindow;
+        if (selected == null)
+            return;
+
+        int width = (int)ActualWidth;
+        int height = (int)ActualHeight;
+        if (width <= 0 || height <= 0)
+            return;
+
+        // Center on camera, make window fill the viewport while maintaining aspect ratio.
+        var worldCenter = _camera.ScreenToWorld(new Point(width / 2.0, height / 2.0), width, height);
+
+        float sourceAspect = selected.PlaneSize.X > 0 && selected.PlaneSize.Y > 0
+            ? selected.PlaneSize.X / selected.PlaneSize.Y
+            : 1.0f;
+
+        float viewportWidth = width / _camera.Zoom;
+        float viewportHeight = height / _camera.Zoom;
+
+        Vector2 newSize;
+        float viewportAspect = viewportWidth / viewportHeight;
+        if (sourceAspect > viewportAspect)
+        {
+            newSize = new Vector2(viewportWidth, viewportWidth / sourceAspect);
+        }
+        else
+        {
+            newSize = new Vector2(viewportHeight * sourceAspect, viewportHeight);
+        }
+
+        selected.PlaneSize = newSize;
+        selected.PlanePosition = worldCenter - newSize / 2;
+        _camera.PanTo(worldCenter, durationMs: 200);
+    }
+
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
-        _navigation.HandleKey(e.Key, Keyboard.Modifiers);
+        _navigation.HandleKey(e);
         e.Handled = true;
     }
 
     private void Window_MouseWheel(object sender, MouseWheelEventArgs e)
     {
-        float factor = e.Delta > 0 ? 1.1f : 0.9f;
-        _camera.ZoomBy(factor);
-    }
-
-    private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        _isDragging = true;
-        _lastMousePosition = e.GetPosition(this);
-        CaptureMouse();
-
-        var worldPos = _camera.ScreenToWorld(_lastMousePosition, (int)ActualWidth, (int)ActualHeight);
-        var window = _canvas.FindWindowAt(worldPos);
-        if (window != null)
-        {
-            _navigation.FocusWindow(window);
-        }
+        // Mouse wheel is now free: vertical pan.
+        _camera.PanBy(new Vector2(0, -e.Delta));
     }
 
     private void Window_MouseMove(object sender, MouseEventArgs e)
     {
-        if (!_isDragging)
-            return;
-
         var pos = e.GetPosition(this);
-        var delta = pos - _lastMousePosition;
-        _camera.PanBy(new Vector2((float)-delta.X, (float)-delta.Y));
+
+        if (_isResizing && _resizeWindow != null)
+        {
+            ResizeWindow(pos);
+            return;
+        }
+
+        if (_isDragging)
+        {
+            var delta = pos - _lastMousePosition;
+            _camera.PanBy(new Vector2((float)-delta.X, (float)-delta.Y));
+            _lastMousePosition = pos;
+            return;
+        }
+
+        UpdateCursor(pos);
+    }
+
+    private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        var pos = e.GetPosition(this);
+        var worldPos = _camera.ScreenToWorld(pos, (int)ActualWidth, (int)ActualHeight);
+        var window = _canvas.FindWindowAt(worldPos);
+
+        if (window != null)
+        {
+            var handle = GetResizeHandle(window, worldPos);
+            if (handle != ResizeHandle.None)
+            {
+                _isResizing = true;
+                _resizeWindow = window;
+                _resizeHandle = handle;
+                _resizeStartPosition = window.PlanePosition;
+                _resizeStartSize = window.PlaneSize;
+                _lastMousePosition = pos;
+                CaptureMouse();
+                return;
+            }
+
+            _navigation.FocusWindow(window);
+        }
+
+        _isDragging = true;
         _lastMousePosition = pos;
+        CaptureMouse();
     }
 
     private void Window_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
         _isDragging = false;
+        _isResizing = false;
+        _resizeWindow = null;
         ReleaseMouseCapture();
+    }
+
+    private void ResizeWindow(Point screenPos)
+    {
+        if (_resizeWindow == null)
+            return;
+
+        var delta = screenPos - _lastMousePosition;
+        var worldDelta = new Vector2((float)(delta.X / _camera.Zoom), (float)(delta.Y / _camera.Zoom));
+
+        var newPos = _resizeStartPosition;
+        var newSize = _resizeStartSize;
+
+        if ((_resizeHandle & ResizeHandle.Left) != 0)
+        {
+            newPos.X += worldDelta.X;
+            newSize.X -= worldDelta.X;
+        }
+        if ((_resizeHandle & ResizeHandle.Right) != 0)
+        {
+            newSize.X += worldDelta.X;
+        }
+        if ((_resizeHandle & ResizeHandle.Top) != 0)
+        {
+            newPos.Y += worldDelta.Y;
+            newSize.Y -= worldDelta.Y;
+        }
+        if ((_resizeHandle & ResizeHandle.Bottom) != 0)
+        {
+            newSize.Y += worldDelta.Y;
+        }
+
+        const float minSize = 50;
+        if (newSize.X < minSize)
+        {
+            if ((_resizeHandle & ResizeHandle.Left) != 0)
+                newPos.X = _resizeStartPosition.X + _resizeStartSize.X - minSize;
+            newSize.X = minSize;
+        }
+        if (newSize.Y < minSize)
+        {
+            if ((_resizeHandle & ResizeHandle.Top) != 0)
+                newPos.Y = _resizeStartPosition.Y + _resizeStartSize.Y - minSize;
+            newSize.Y = minSize;
+        }
+
+        _resizeWindow.PlanePosition = newPos;
+        _resizeWindow.PlaneSize = newSize;
+    }
+
+    private void UpdateCursor(Point screenPos)
+    {
+        var worldPos = _camera.ScreenToWorld(screenPos, (int)ActualWidth, (int)ActualHeight);
+        var window = _canvas.FindWindowAt(worldPos);
+        if (window == null)
+        {
+            Cursor = Cursors.Arrow;
+            return;
+        }
+
+        var handle = GetResizeHandle(window, worldPos);
+        Cursor = handle switch
+        {
+            ResizeHandle.TopLeft or ResizeHandle.BottomRight => Cursors.SizeNWSE,
+            ResizeHandle.TopRight or ResizeHandle.BottomLeft => Cursors.SizeNESW,
+            ResizeHandle.Left or ResizeHandle.Right => Cursors.SizeWE,
+            ResizeHandle.Top or ResizeHandle.Bottom => Cursors.SizeNS,
+            _ => Cursors.SizeAll
+        };
+    }
+
+    private ResizeHandle GetResizeHandle(SpatialWindow window, Vector2 worldPos)
+    {
+        double handleSizeWorld = ResizeHandleSize / _camera.Zoom;
+        bool left = Math.Abs(worldPos.X - window.PlanePosition.X) < handleSizeWorld;
+        bool right = Math.Abs(worldPos.X - (window.PlanePosition.X + window.PlaneSize.X)) < handleSizeWorld;
+        bool top = Math.Abs(worldPos.Y - window.PlanePosition.Y) < handleSizeWorld;
+        bool bottom = Math.Abs(worldPos.Y - (window.PlanePosition.Y + window.PlaneSize.Y)) < handleSizeWorld;
+
+        if (top && left) return ResizeHandle.TopLeft;
+        if (top && right) return ResizeHandle.TopRight;
+        if (bottom && left) return ResizeHandle.BottomLeft;
+        if (bottom && right) return ResizeHandle.BottomRight;
+        if (left) return ResizeHandle.Left;
+        if (right) return ResizeHandle.Right;
+        if (top) return ResizeHandle.Top;
+        if (bottom) return ResizeHandle.Bottom;
+
+        return ResizeHandle.None;
     }
 
     protected override void OnClosing(CancelEventArgs e)
@@ -225,4 +386,18 @@ public partial class MainWindow : Window
         _enumerator.Dispose();
         base.OnClosed(e);
     }
+}
+
+[Flags]
+internal enum ResizeHandle
+{
+    None = 0,
+    Left = 1,
+    Right = 2,
+    Top = 4,
+    Bottom = 8,
+    TopLeft = Top | Left,
+    TopRight = Top | Right,
+    BottomLeft = Bottom | Left,
+    BottomRight = Bottom | Right
 }
