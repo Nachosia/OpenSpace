@@ -23,8 +23,12 @@ internal sealed class DwmThumbnailManager : IDisposable
 
         int hr = DwmApi.DwmRegisterThumbnail(_destinationHwnd, window.Hwnd, out IntPtr thumb);
         if (hr < 0)
+        {
+            App.LogException(new Exception($"[DwmThumbnailManager] Failed to register thumbnail for HWND={window.Hwnd}, Title={window.Title}, HR=0x{hr:X8}"));
             return;
+        }
 
+        App.LogException(new Exception($"[DwmThumbnailManager] Registered thumbnail for HWND={window.Hwnd}, Title={window.Title}, Handle={thumb}"));
         window.ThumbnailHandle = thumb;
     }
 

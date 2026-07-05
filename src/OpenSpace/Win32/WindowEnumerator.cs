@@ -34,22 +34,16 @@ internal sealed class WindowEnumerator : IDisposable
             if (_ownWindows.Contains(hWnd))
                 return true;
 
-            // Skip owned windows (e.g. modal dialogs) unless they are top-level explorers
             if (NativeMethods.GetWindow(hWnd, NativeMethods.GW_OWNER) != IntPtr.Zero)
                 return true;
 
-            // Skip windows with no title
             int textLength = NativeMethods.GetWindowTextLength(hWnd);
             if (textLength == 0)
                 return true;
 
-            // Skip tool windows
             var exStyle = (uint)NativeMethods.GetWindowLong(hWnd, NativeMethods.GWL_EXSTYLE);
             if ((exStyle & NativeMethods.WS_EX_TOOLWINDOW) != 0)
                 return true;
-
-            // Skip cloaked windows (DWM thumbnails will fail anyway, but this avoids listing them)
-            // Note: checking DWM cloaked attribute could be added later if needed.
 
             if (!_vdHelper.IsWindowOnCurrentVirtualDesktop(hWnd))
                 return true;
@@ -60,13 +54,18 @@ internal sealed class WindowEnumerator : IDisposable
             if (!NativeMethods.GetWindowRect(hWnd, out RECT rect))
                 return true;
 
-            // Skip zero-size windows
             if (rect.Width <= 0 || rect.Height <= 0)
                 return true;
 
             windows.Add(new SpatialWindow(hWnd, title, className, rect));
             return true;
         }, IntPtr.Zero);
+
+        App.LogException(new Exception($"[WindowEnumerator] Found {windows.Count} windows on current virtual desktop."));
+        foreach (var w in windows)
+        {
+            App.LogException(new Exception($"[WindowEnumerator] Window: HWND={w.Hwnd}, Title={w.Title}, Rect={w.ScreenBounds.Left},{w.ScreenBounds.Top},{w.ScreenBounds.Width}x{w.ScreenBounds.Height}"));
+        }
 
         return windows;
     }
