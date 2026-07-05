@@ -30,3 +30,6 @@ Thumbs.db
 
 # Publish
 publish/
+installer/build/
+publish-installer/
+*.zip
