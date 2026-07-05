@@ -82,6 +82,10 @@ public partial class LauncherWindow : Window
     {
         StartMinimizedCheckBox.IsChecked = _config.StartMinimizedToTray;
         CloseToTrayCheckBox.IsChecked = _config.CloseToTray;
+
+        _hotkeyRows[0].Setting.Modifiers = _config.ToggleOverlay.Modifiers;
+        _hotkeyRows[0].Setting.Key = _config.ToggleOverlay.Key;
+        _hotkeyRows[0].SyncToUi();
     }
 
     private void SaveConfigFromUi()
@@ -109,24 +113,52 @@ public partial class LauncherWindow : Window
     {
         _toggleHotKey.Unregister();
 
-        var vk = KeyInterop.VirtualKeyFromKey(_config.ToggleOverlay.Key);
-        uint modifiers = 0;
-        if ((_config.ToggleOverlay.Modifiers & ModifierKeys.Alt) == ModifierKeys.Alt) modifiers |= NativeMethods.MOD_ALT;
-        if ((_config.ToggleOverlay.Modifiers & ModifierKeys.Control) == ModifierKeys.Control) modifiers |= NativeMethods.MOD_CONTROL;
-        if ((_config.ToggleOverlay.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift) modifiers |= NativeMethods.MOD_SHIFT;
-        if ((_config.ToggleOverlay.Modifiers & ModifierKeys.Windows) == ModifierKeys.Windows) modifiers |= NativeMethods.MOD_WIN;
+        var candidates = new List<HotkeySetting>
+        {
+            _config.ToggleOverlay,
+            new HotkeySetting(ModifierKeys.Windows, Key.OemTilde),
+            new HotkeySetting(ModifierKeys.Windows, Key.OemQuestion),
+            new HotkeySetting(ModifierKeys.Windows, Key.OemPeriod),
+            new HotkeySetting(ModifierKeys.Windows, Key.OemComma),
+            new HotkeySetting(ModifierKeys.Windows, Key.F12),
+            new HotkeySetting(ModifierKeys.Windows, Key.F11),
+            new HotkeySetting(ModifierKeys.Windows, Key.F10),
+        };
 
-        if (!_toggleHotKey.Register(modifiers | NativeMethods.MOD_NOREPEAT, (uint)vk))
+        foreach (var candidate in candidates)
         {
-            HotkeyWarningText.Text = "Не удалось зарегистрировать горячую клавишу для показа оверлея. Выберите другую комбинацию.";
-            HotkeyWarningText.Visibility = Visibility.Visible;
+            var vk = KeyInterop.VirtualKeyFromKey(candidate.Key);
+            uint modifiers = 0;
+            if ((candidate.Modifiers & ModifierKeys.Alt) == ModifierKeys.Alt) modifiers |= NativeMethods.MOD_ALT;
+            if ((candidate.Modifiers & ModifierKeys.Control) == ModifierKeys.Control) modifiers |= NativeMethods.MOD_CONTROL;
+            if ((candidate.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift) modifiers |= NativeMethods.MOD_SHIFT;
+            if ((candidate.Modifiers & ModifierKeys.Windows) == ModifierKeys.Windows) modifiers |= NativeMethods.MOD_WIN;
+
+            if (_toggleHotKey.Register(modifiers | NativeMethods.MOD_NOREPEAT, (uint)vk))
+            {
+                if (candidate.Key != _config.ToggleOverlay.Key || candidate.Modifiers != _config.ToggleOverlay.Modifiers)
+                {
+                    _config.ToggleOverlay = candidate.Clone();
+                    ConfigService.Save(_config);
+                    ApplyConfigToUi();
+                    HotkeyWarningText.Text = $"Ваша горячая клавиша была занята. Автоматически выбрана {candidate.Modifiers}+{candidate.Key}.";
+                    HotkeyWarningText.Foreground = System.Windows.Media.Brushes.Orange;
+                    HotkeyWarningText.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    HotkeyWarningText.Visibility = Visibility.Collapsed;
+                }
+
+                _toggleHotKey.HotKeyPressed -= OnToggleHotKeyPressed;
+                _toggleHotKey.HotKeyPressed += OnToggleHotKeyPressed;
+                return;
+            }
         }
-        else
-        {
-            HotkeyWarningText.Visibility = Visibility.Collapsed;
-            _toggleHotKey.HotKeyPressed -= OnToggleHotKeyPressed;
-            _toggleHotKey.HotKeyPressed += OnToggleHotKeyPressed;
-        }
+
+        HotkeyWarningText.Text = "Не удалось зарегистрировать горячую клавишу для показа оверлея. Выберите другую комбинацию вручную.";
+        HotkeyWarningText.Foreground = System.Windows.Media.Brushes.Red;
+        HotkeyWarningText.Visibility = Visibility.Visible;
     }
 
     private void OnToggleHotKeyPressed()
@@ -362,6 +394,12 @@ internal sealed class HotkeyRow
     {
         Setting.Modifiers = (ModifierKeys)_modifiersBox.SelectedValue;
         Setting.Key = (Key)_keyBox.SelectedItem;
+    }
+
+    public void SyncToUi()
+    {
+        _modifiersBox.SelectedValue = Setting.Modifiers;
+        _keyBox.SelectedItem = Setting.Key;
     }
 }
 

@@ -1,5 +1,5 @@
 #define MyAppName "OpenSpace"
-#define MyAppVersion "0.0.7"
+#define MyAppVersion "0.0.8"
 #define MyAppPublisher "Nachosia"
 #define MyAppURL "https://github.com/Nachosia/OpenSpace"
 #define MyAppExeName "OpenSpace.exe"
@@ -18,7 +18,7 @@ LicenseFile=
 InfoBeforeFile=
 InfoAfterFile=
 OutputDir=..\..\publish-installer
-OutputBaseFilename=OpenSpace-0.0.7-setup
+OutputBaseFilename=OpenSpace-0.0.8-setup
 SetupIconFile=
 Compression=lzma
 SolidCompression=yes
