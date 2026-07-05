@@ -6,7 +6,7 @@ namespace OpenSpace.Core;
 
 public sealed class AppConfig
 {
-    public HotkeySetting ToggleOverlay { get; set; } = new(ModifierKeys.Windows, Key.O);
+    public HotkeySetting ToggleOverlay { get; set; } = new(ModifierKeys.Windows, Key.OemTilde);
     public HotkeySetting NextWindow { get; set; } = new(ModifierKeys.None, Key.Tab);
     public HotkeySetting PreviousWindow { get; set; } = new(ModifierKeys.Shift, Key.Tab);
     public HotkeySetting ActivateWindow { get; set; } = new(ModifierKeys.None, Key.Enter);

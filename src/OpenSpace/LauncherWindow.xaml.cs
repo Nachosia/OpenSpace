@@ -118,11 +118,12 @@ public partial class LauncherWindow : Window
 
         if (!_toggleHotKey.Register(modifiers | NativeMethods.MOD_NOREPEAT, (uint)vk))
         {
-            MessageBox.Show("Не удалось зарегистрировать горячую клавишу для показа оверлея. Попробуйте другую комбинацию.",
-                "OpenSpace", MessageBoxButton.OK, MessageBoxImage.Warning);
+            HotkeyWarningText.Text = "Не удалось зарегистрировать горячую клавишу для показа оверлея. Выберите другую комбинацию.";
+            HotkeyWarningText.Visibility = Visibility.Visible;
         }
         else
         {
+            HotkeyWarningText.Visibility = Visibility.Collapsed;
             _toggleHotKey.HotKeyPressed -= OnToggleHotKeyPressed;
             _toggleHotKey.HotKeyPressed += OnToggleHotKeyPressed;
         }
@@ -311,9 +312,6 @@ public partial class LauncherWindow : Window
 
         if (setting.Modifiers == ModifierKeys.Windows && setting.Key == Key.D)
             return "Win+D сворачивает/восстанавливает все окна";
-
-        if (setting.Modifiers == ModifierKeys.Windows && setting.Key == Key.O)
-            return "Win+O открывает панель быстрых настроек (Windows 11)";
 
         return null;
     }

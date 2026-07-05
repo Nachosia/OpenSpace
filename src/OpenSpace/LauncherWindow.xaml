@@ -6,13 +6,14 @@
         xmlns:local="clr-namespace:OpenSpace"
         mc:Ignorable="d"
         Title="OpenSpace Launcher"
-        Height="560"
+        Height="580"
         Width="460"
         ResizeMode="CanMinimize"
         WindowStartupLocation="CenterScreen"
         Closing="Window_Closing">
     <Grid Margin="20">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -67,19 +68,25 @@
                    Text="Настройте горячие клавиши, затем нажмите «Запустить OpenSpace»."
                    TextWrapping="Wrap"
                    Foreground="Gray"
-                   Margin="0,0,0,20"/>
+                   Margin="0,0,0,10"/>
 
-        <ScrollViewer Grid.Row="4"
-                      VerticalScrollBarVisibility="Auto"
-                      Margin="0,0,0,10">
+        <TextBlock Grid.Row="4"
+                   x:Name="HotkeyWarningText"
+                   TextWrapping="Wrap"
+                   Foreground="OrangeRed"
+                   Visibility="Collapsed"
+                   Margin="0,0,0,10"/>
+
+        <ScrollViewer Grid.Row="5"
+                      VerticalScrollBarVisibility="Auto">
             <StackPanel x:Name="HotkeysPanel">
                 <!-- Hotkey rows will be generated here -->
             </StackPanel>
         </ScrollViewer>
 
-        <StackPanel Grid.Row="5"
+        <StackPanel Grid.Row="6"
                     Orientation="Horizontal"
-                    Margin="0,0,0,10">
+                    Margin="0,10,0,10">
             <CheckBox x:Name="StartMinimizedCheckBox"
                       Content="Запускать свёрнутым в трей"
                       Margin="0,0,20,0"/>
@@ -88,14 +95,14 @@
                       IsChecked="True"/>
         </StackPanel>
 
-        <TextBlock Grid.Row="6"
+        <TextBlock Grid.Row="7"
                    x:Name="ConflictText"
                    TextWrapping="Wrap"
                    Foreground="OrangeRed"
                    Visibility="Collapsed"
                    Margin="0,0,0,10"/>
 
-        <StackPanel Grid.Row="7"
+        <StackPanel Grid.Row="8"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right">
             <Button x:Name="RefreshButton"
