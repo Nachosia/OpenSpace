@@ -35,10 +35,15 @@ public sealed class Camera
 
     public void PanTo(Vector2 target, float durationMs = 350f)
     {
+        PanTo(target, Zoom, durationMs);
+    }
+
+    public void PanTo(Vector2 target, float targetZoom, float durationMs = 350f)
+    {
         _startPosition = Position;
         _targetPosition = target;
         _startZoom = Zoom;
-        _targetZoom = 1.0f;
+        _targetZoom = targetZoom;
         _elapsed = 0;
         _duration = durationMs;
         _isAnimating = true;

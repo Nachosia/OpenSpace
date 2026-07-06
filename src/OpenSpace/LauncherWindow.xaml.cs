@@ -83,6 +83,9 @@ public partial class LauncherWindow : Window
     {
         StartMinimizedCheckBox.IsChecked = _config.StartMinimizedToTray;
         CloseToTrayCheckBox.IsChecked = _config.CloseToTray;
+        MaintainAspectRatioCheckBox.IsChecked = _config.MaintainAspectRatio;
+        HoverFocusRequiresCtrlCheckBox.IsChecked = _config.HoverFocusRequiresCtrl;
+        HoverFocusDelayTextBox.Text = _config.HoverFocusDelayMs.ToString();
 
         _hotkeyRows[0].Setting.Modifiers = _config.ToggleOverlay.Modifiers;
         _hotkeyRows[0].Setting.Key = _config.ToggleOverlay.Key;
@@ -106,6 +109,11 @@ public partial class LauncherWindow : Window
 
         _config.StartMinimizedToTray = StartMinimizedCheckBox.IsChecked == true;
         _config.CloseToTray = CloseToTrayCheckBox.IsChecked == true;
+        _config.MaintainAspectRatio = MaintainAspectRatioCheckBox.IsChecked == true;
+        _config.HoverFocusRequiresCtrl = HoverFocusRequiresCtrlCheckBox.IsChecked == true;
+
+        if (int.TryParse(HoverFocusDelayTextBox.Text, out int delay) && delay >= 0)
+            _config.HoverFocusDelayMs = delay;
 
         ConfigService.Save(_config);
     }

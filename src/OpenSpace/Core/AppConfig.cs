@@ -18,6 +18,9 @@ public sealed class AppConfig
 
     public bool StartMinimizedToTray { get; set; } = false;
     public bool CloseToTray { get; set; } = true;
+    public bool MaintainAspectRatio { get; set; } = true;
+    public int HoverFocusDelayMs { get; set; } = 500;
+    public bool HoverFocusRequiresCtrl { get; set; } = false;
 }
 
 public sealed class HotkeySetting

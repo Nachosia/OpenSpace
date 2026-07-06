@@ -21,6 +21,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0"
@@ -95,14 +96,33 @@
                       IsChecked="True"/>
         </StackPanel>
 
-        <TextBlock Grid.Row="7"
+        <StackPanel Grid.Row="7"
+                    Orientation="Horizontal"
+                    Margin="0,0,0,10">
+            <CheckBox x:Name="MaintainAspectRatioCheckBox"
+                      Content="Сохранять пропорции окон"
+                      IsChecked="True"
+                      Margin="0,0,20,0"/>
+            <CheckBox x:Name="HoverFocusRequiresCtrlCheckBox"
+                      Content="Фокус по наведению только с Ctrl"
+                      Margin="0,0,20,0"/>
+            <TextBlock Text="Задержка наведения (мс):"
+                       VerticalAlignment="Center"
+                       Margin="0,0,5,0"/>
+            <TextBox x:Name="HoverFocusDelayTextBox"
+                     Text="500"
+                     Width="60"
+                     VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <TextBlock Grid.Row="8"
                    x:Name="ConflictText"
                    TextWrapping="Wrap"
                    Foreground="OrangeRed"
                    Visibility="Collapsed"
                    Margin="0,0,0,10"/>
 
-        <StackPanel Grid.Row="8"
+        <StackPanel Grid.Row="9"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right">
             <Button x:Name="RefreshButton"

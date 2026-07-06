@@ -32,7 +32,7 @@ internal sealed class DwmThumbnailManager : IDisposable
         window.ThumbnailHandle = thumb;
     }
 
-    public void UpdateThumbnail(SpatialWindow window, Camera camera, int viewportWidth, int viewportHeight)
+    public void UpdateThumbnail(SpatialWindow window, Camera camera, int viewportWidth, int viewportHeight, bool maintainAspectRatio)
     {
         if (window.ThumbnailHandle == IntPtr.Zero)
             return;
@@ -47,7 +47,7 @@ internal sealed class DwmThumbnailManager : IDisposable
         }
 
         // Maintain aspect ratio using the source window size.
-        var aspectRect = MaintainAspectRatio(window, destRect);
+        var aspectRect = maintainAspectRatio ? MaintainAspectRatio(window, destRect) : destRect;
 
         var props = new DWM_THUMBNAIL_PROPERTIES
         {

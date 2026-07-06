@@ -19,6 +19,8 @@ public partial class MainWindow : Window
     private AppConfig _config = new();
 
     private System.Windows.Threading.DispatcherTimer? _renderTimer;
+    private System.Windows.Threading.DispatcherTimer? _hoverTimer;
+    private SpatialWindow? _hoverWindow;
     private bool _isDragging;
     private bool _isResizing;
     private Point _lastMousePosition;
@@ -64,7 +66,12 @@ public partial class MainWindow : Window
             Interval = TimeSpan.FromMilliseconds(16)
         };
         _renderTimer.Tick += OnRenderTick;
-        _renderTimer.Start();
+
+        _hoverTimer = new System.Windows.Threading.DispatcherTimer(System.Windows.Threading.DispatcherPriority.Background)
+        {
+            Interval = TimeSpan.FromMilliseconds(_config.HoverFocusDelayMs)
+        };
+        _hoverTimer.Tick += OnHoverTimerTick;
 
         Hide();
     }
@@ -73,8 +80,8 @@ public partial class MainWindow : Window
     {
         try
         {
+            _renderTimer?.Start();
             RefreshWindows();
-            _navigation.FocusSelected();
 
             int width = (int)ActualWidth;
             int height = (int)ActualHeight;
@@ -97,6 +104,7 @@ public partial class MainWindow : Window
 
     public void HideOverlay()
     {
+        _renderTimer?.Stop();
         foreach (var window in _canvas.Windows)
         {
             _thumbnailManager.UnregisterThumbnail(window);
@@ -141,7 +149,7 @@ public partial class MainWindow : Window
 
         foreach (var window in _canvas.Windows)
         {
-            _thumbnailManager.UpdateThumbnail(window, _camera, width, height);
+            _thumbnailManager.UpdateThumbnail(window, _camera, width, height, _config.MaintainAspectRatio);
         }
 
         UpdateSelectionRectangle(width, height);
@@ -241,10 +249,50 @@ public partial class MainWindow : Window
         }
 
         UpdateCursor(pos);
+        UpdateHover(pos);
+    }
+
+    private void UpdateHover(Point screenPos)
+    {
+        if (_config.HoverFocusDelayMs <= 0)
+            return;
+
+        var worldPos = _camera.ScreenToWorld(screenPos, (int)ActualWidth, (int)ActualHeight);
+        var window = _canvas.FindWindowAt(worldPos);
+
+        if (window == null || window == _hoverWindow || window == _canvas.SelectedWindow)
+        {
+            _hoverTimer?.Stop();
+            _hoverWindow = null;
+            return;
+        }
+
+        if (_config.HoverFocusRequiresCtrl && !Keyboard.IsKeyDown(Key.LeftCtrl) && !Keyboard.IsKeyDown(Key.RightCtrl))
+        {
+            _hoverTimer?.Stop();
+            _hoverWindow = null;
+            return;
+        }
+
+        _hoverWindow = window;
+        _hoverTimer?.Stop();
+        _hoverTimer?.Start();
+    }
+
+    private void OnHoverTimerTick(object? sender, EventArgs e)
+    {
+        _hoverTimer?.Stop();
+        if (_hoverWindow != null)
+        {
+            _navigation.FocusWindow(_hoverWindow);
+        }
     }
 
     private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
+        _hoverTimer?.Stop();
+        _hoverWindow = null;
+
         var pos = e.GetPosition(this);
         var worldPos = _camera.ScreenToWorld(pos, (int)ActualWidth, (int)ActualHeight);
         var window = _canvas.FindWindowAt(worldPos);
@@ -388,6 +436,7 @@ public partial class MainWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _renderTimer?.Stop();
+        _hoverTimer?.Stop();
 
         foreach (var window in _canvas.Windows)
         {
