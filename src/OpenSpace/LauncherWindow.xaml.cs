@@ -22,49 +22,60 @@ public partial class LauncherWindow : Window
 
     public LauncherWindow()
     {
-        InitializeComponent();
-
-        _config = ConfigService.Load();
-        _overlay = new MainWindow();
-
-        var helper = new WindowInteropHelper(this);
-        helper.EnsureHandle();
-        _overlay.TrackWindow(helper.Handle);
-        _toggleHotKey = new HotKeyHelper(this, 1);
-
-        BuildHotkeyRows();
-
-        LayoutModeComboBox.ItemsSource = new[]
+        try
         {
-            new { Text = "Свободная сетка", Value = LayoutMode.FreeGrid },
-            new { Text = "Координаты экрана", Value = LayoutMode.ScreenCoordinates }
-        };
-        LayoutModeComboBox.DisplayMemberPath = "Text";
-        LayoutModeComboBox.SelectedValuePath = "Value";
+            App.LogException(new Exception("[LauncherWindow] Constructor start"));
+            InitializeComponent();
 
-        ApplyConfigToUi();
+            _config = ConfigService.Load();
+            _overlay = new MainWindow();
 
-        VersionText.Text = VersionInfo.CurrentVersion;
-        _ = CheckForUpdateAsync(silent: true);
+            var helper = new WindowInteropHelper(this);
+            helper.EnsureHandle();
+            _overlay.TrackWindow(helper.Handle);
+            _toggleHotKey = new HotKeyHelper(this, 1);
 
-        _trayIcon = new NotifyIcon
+            BuildHotkeyRows();
+
+            LayoutModeComboBox.ItemsSource = new[]
+            {
+                new { Text = "Свободная сетка", Value = LayoutMode.FreeGrid },
+                new { Text = "Координаты экрана", Value = LayoutMode.ScreenCoordinates }
+            };
+            LayoutModeComboBox.DisplayMemberPath = "Text";
+            LayoutModeComboBox.SelectedValuePath = "Value";
+
+            ApplyConfigToUi();
+
+            VersionText.Text = VersionInfo.CurrentVersion;
+            _ = CheckForUpdateAsync(silent: true);
+
+            _trayIcon = new NotifyIcon
+            {
+                Icon = SystemIcons.Application,
+                Text = "OpenSpace",
+                Visible = true
+            };
+            _trayIcon.DoubleClick += TrayIcon_DoubleClick;
+            _trayIcon.ContextMenuStrip = new ContextMenuStrip();
+            _trayIcon.ContextMenuStrip.Items.Add("Открыть", null, (_, _) => Show());
+            _trayIcon.ContextMenuStrip.Items.Add("Запустить OpenSpace", null, (_, _) => LaunchOverlay());
+            _trayIcon.ContextMenuStrip.Items.Add(new ToolStripSeparator());
+            _trayIcon.ContextMenuStrip.Items.Add("Выход", null, (_, _) => ShutdownApp());
+
+            RegisterToggleHotkey();
+
+            if (_config.StartMinimizedToTray)
+            {
+                Hide();
+            }
+
+            App.LogException(new Exception("[LauncherWindow] Constructor complete"));
+        }
+        catch (Exception ex)
         {
-            Icon = SystemIcons.Application,
-            Text = "OpenSpace",
-            Visible = true
-        };
-        _trayIcon.DoubleClick += TrayIcon_DoubleClick;
-        _trayIcon.ContextMenuStrip = new ContextMenuStrip();
-        _trayIcon.ContextMenuStrip.Items.Add("Открыть", null, (_, _) => Show());
-        _trayIcon.ContextMenuStrip.Items.Add("Запустить OpenSpace", null, (_, _) => LaunchOverlay());
-        _trayIcon.ContextMenuStrip.Items.Add(new ToolStripSeparator());
-        _trayIcon.ContextMenuStrip.Items.Add("Выход", null, (_, _) => ShutdownApp());
-
-        RegisterToggleHotkey();
-
-        if (_config.StartMinimizedToTray)
-        {
-            Hide();
+            App.LogException(ex);
+            throw;
         }
     }
 

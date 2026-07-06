@@ -35,12 +35,14 @@ public partial class MainWindow : Window
 
     public MainWindow()
     {
+        App.LogException(new Exception("[MainWindow] Constructor start"));
         InitializeComponent();
         _navigation = new NavigationController(_canvas, _camera, _config);
         _navigation.WindowActivated += OnWindowActivated;
         _navigation.ExitRequested += HideOverlay;
         _navigation.MaximizeSelected += OnMaximizeSelected;
         ApplyConfig(_config);
+        App.LogException(new Exception("[MainWindow] Constructor complete"));
     }
 
     public void ApplyConfig(AppConfig config)
@@ -82,6 +84,12 @@ public partial class MainWindow : Window
         try
         {
             _renderTimer?.Start();
+
+            // Ensure the destination HWND is set before registering DWM thumbnails.
+            // Loaded may not have fired yet if the window has never been shown.
+            var helper = new WindowInteropHelper(this);
+            _thumbnailManager.SetDestinationHwnd(helper.EnsureHandle());
+
             RefreshWindows();
 
             Show();
@@ -121,6 +129,9 @@ public partial class MainWindow : Window
     {
         try
         {
+            var helper = new WindowInteropHelper(this);
+            _thumbnailManager.SetDestinationHwnd(helper.EnsureHandle());
+
             foreach (var window in _canvas.Windows)
             {
                 _thumbnailManager.UnregisterThumbnail(window);

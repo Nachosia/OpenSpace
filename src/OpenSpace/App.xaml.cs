@@ -12,6 +12,7 @@ public partial class App : Application
 
     public App()
     {
+        LogException(new Exception($"[App] Starting OpenSpace {Core.VersionInfo.CurrentVersion}"));
         DispatcherUnhandledException += OnDispatcherUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
