@@ -83,6 +83,10 @@ public partial class MainWindow : Window
             _renderTimer?.Start();
             RefreshWindows();
 
+            Show();
+            Activate();
+            UpdateLayout();
+
             int width = (int)ActualWidth;
             int height = (int)ActualHeight;
             if (_canvas.Windows.Count > 0 && width > 0 && height > 0)
@@ -90,9 +94,6 @@ public partial class MainWindow : Window
                 _camera.FitToBounds(_canvas.GetBounds(), width, height);
             }
 
-            Show();
-            Activate();
-            UpdateLayout();
             UpdateThumbnails();
         }
         catch (Exception ex)
