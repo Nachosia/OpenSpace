@@ -21,6 +21,18 @@ public sealed class AppConfig
     public bool MaintainAspectRatio { get; set; } = true;
     public int HoverFocusDelayMs { get; set; } = 500;
     public bool HoverFocusRequiresCtrl { get; set; } = false;
+
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public LayoutMode WindowLayoutMode { get; set; } = LayoutMode.FreeGrid;
+
+    public bool ShowDesktopIcons { get; set; } = true;
+    public string DesktopIconsFolder { get; set; } = string.Empty;
+}
+
+public enum LayoutMode
+{
+    ScreenCoordinates,
+    FreeGrid
 }
 
 public sealed class HotkeySetting

@@ -29,6 +29,7 @@ public partial class MainWindow : Window
     private ResizeHandle _resizeHandle;
     private Vector2 _resizeStartPosition;
     private Vector2 _resizeStartSize;
+    private readonly Dictionary<DesktopIcon, FrameworkElement> _iconControls = new();
 
     private const double ResizeHandleSize = 12;
 
@@ -95,6 +96,7 @@ public partial class MainWindow : Window
             }
 
             UpdateThumbnails();
+            BuildIconControls();
         }
         catch (Exception ex)
         {
@@ -110,6 +112,8 @@ public partial class MainWindow : Window
         {
             _thumbnailManager.UnregisterThumbnail(window);
         }
+        _iconControls.Clear();
+        IconCanvas.Children.Clear();
         Hide();
     }
 
@@ -122,7 +126,17 @@ public partial class MainWindow : Window
                 _thumbnailManager.UnregisterThumbnail(window);
             }
 
-            _canvas.LoadWindows(_enumerator.Enumerate());
+            DesktopIconArea? iconArea = null;
+            if (_config.ShowDesktopIcons)
+            {
+                string folder = string.IsNullOrWhiteSpace(_config.DesktopIconsFolder)
+                    ? Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
+                    : _config.DesktopIconsFolder;
+                iconArea = DesktopIconArea.Load(folder);
+            }
+
+            _canvas.LayoutMode = _config.WindowLayoutMode;
+            _canvas.LoadWindows(_enumerator.Enumerate(), iconArea);
 
             foreach (var window in _canvas.Windows)
             {
@@ -139,6 +153,7 @@ public partial class MainWindow : Window
     {
         _camera.Update(_renderTimer!.Interval.TotalMilliseconds);
         UpdateThumbnails();
+        UpdateIconTransforms();
     }
 
     private void UpdateThumbnails()
@@ -170,6 +185,109 @@ public partial class MainWindow : Window
         SelectionRectangle.Width = Math.Max(0, rect.Width);
         SelectionRectangle.Height = Math.Max(0, rect.Height);
         SelectionRectangle.Visibility = Visibility.Visible;
+    }
+
+    private void BuildIconControls()
+    {
+        IconCanvas.Children.Clear();
+        _iconControls.Clear();
+
+        var area = _canvas.IconArea;
+        if (area == null)
+            return;
+
+        foreach (var icon in area.Icons)
+        {
+            var button = new System.Windows.Controls.Button
+            {
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+                Padding = new Thickness(4),
+                Cursor = Cursors.Hand,
+                RenderTransformOrigin = new System.Windows.Point(0, 0)
+            };
+
+            var panel = new System.Windows.Controls.StackPanel
+            {
+                Orientation = Orientation.Vertical,
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Center
+            };
+
+            if (icon.IconSource != null)
+            {
+                panel.Children.Add(new System.Windows.Controls.Image
+                {
+                    Source = icon.IconSource,
+                    Width = 48,
+                    Height = 48,
+                    Stretch = System.Windows.Media.Stretch.Uniform
+                });
+            }
+
+            panel.Children.Add(new System.Windows.Controls.TextBlock
+            {
+                Text = icon.Name,
+                Foreground = Brushes.White,
+                TextTrimming = System.Windows.TextTrimming.CharacterEllipsis,
+                TextAlignment = System.Windows.TextAlignment.Center,
+                MaxWidth = 90,
+                FontSize = 12
+            });
+
+            button.Content = panel;
+            button.Click += (_, _) => OnIconClicked(icon);
+            IconCanvas.Children.Add(button);
+            _iconControls[icon] = button;
+        }
+
+        UpdateIconTransforms();
+    }
+
+    private void UpdateIconTransforms()
+    {
+        int width = (int)ActualWidth;
+        int height = (int)ActualHeight;
+        if (width <= 0 || height <= 0)
+            return;
+
+        float halfW = width / 2f;
+        float halfH = height / 2f;
+        float zoom = _camera.Zoom;
+
+        foreach (var pair in _iconControls)
+        {
+            var icon = pair.Key;
+            var control = pair.Value;
+
+            float x = (icon.Position.X - _camera.Position.X) * zoom + halfW;
+            float y = (icon.Position.Y - _camera.Position.Y) * zoom + halfH;
+
+            Canvas.SetLeft(control, x);
+            Canvas.SetTop(control, y);
+            control.RenderTransform = new ScaleTransform(zoom, zoom);
+
+            bool visible = x + icon.Size.X * zoom > 0 &&
+                           y + icon.Size.Y * zoom > 0 &&
+                           x < width &&
+                           y < height;
+            control.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+        }
+    }
+
+    private void OnIconClicked(DesktopIcon icon)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(icon.Path)
+            {
+                UseShellExecute = true
+            });
+            HideOverlay();
+        }
+        catch (Exception ex)
+        {
+            App.LogException(ex);
+        }
     }
 
     private void OnWindowActivated()

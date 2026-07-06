@@ -33,5 +33,7 @@
                    VerticalAlignment="Top"
                    Margin="0,20,0,0"
                    TextAlignment="Center"/>
+
+        <Canvas x:Name="IconCanvas" IsHitTestVisible="True"/>
     </Grid>
 </Window>

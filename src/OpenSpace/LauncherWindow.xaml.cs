@@ -33,6 +33,15 @@ public partial class LauncherWindow : Window
         _toggleHotKey = new HotKeyHelper(this, 1);
 
         BuildHotkeyRows();
+
+        LayoutModeComboBox.ItemsSource = new[]
+        {
+            new { Text = "Свободная сетка", Value = LayoutMode.FreeGrid },
+            new { Text = "Координаты экрана", Value = LayoutMode.ScreenCoordinates }
+        };
+        LayoutModeComboBox.DisplayMemberPath = "Text";
+        LayoutModeComboBox.SelectedValuePath = "Value";
+
         ApplyConfigToUi();
 
         VersionText.Text = VersionInfo.CurrentVersion;
@@ -86,6 +95,9 @@ public partial class LauncherWindow : Window
         MaintainAspectRatioCheckBox.IsChecked = _config.MaintainAspectRatio;
         HoverFocusRequiresCtrlCheckBox.IsChecked = _config.HoverFocusRequiresCtrl;
         HoverFocusDelayTextBox.Text = _config.HoverFocusDelayMs.ToString();
+        LayoutModeComboBox.SelectedValue = _config.WindowLayoutMode;
+        ShowDesktopIconsCheckBox.IsChecked = _config.ShowDesktopIcons;
+        DesktopIconsFolderTextBox.Text = _config.DesktopIconsFolder;
 
         _hotkeyRows[0].Setting.Modifiers = _config.ToggleOverlay.Modifiers;
         _hotkeyRows[0].Setting.Key = _config.ToggleOverlay.Key;
@@ -111,6 +123,11 @@ public partial class LauncherWindow : Window
         _config.CloseToTray = CloseToTrayCheckBox.IsChecked == true;
         _config.MaintainAspectRatio = MaintainAspectRatioCheckBox.IsChecked == true;
         _config.HoverFocusRequiresCtrl = HoverFocusRequiresCtrlCheckBox.IsChecked == true;
+        _config.ShowDesktopIcons = ShowDesktopIconsCheckBox.IsChecked == true;
+        _config.DesktopIconsFolder = DesktopIconsFolderTextBox.Text ?? string.Empty;
+
+        if (LayoutModeComboBox.SelectedValue is LayoutMode mode)
+            _config.WindowLayoutMode = mode;
 
         if (int.TryParse(HoverFocusDelayTextBox.Text, out int delay) && delay >= 0)
             _config.HoverFocusDelayMs = delay;
@@ -192,6 +209,7 @@ public partial class LauncherWindow : Window
         SaveConfigFromUi();
         RegisterToggleHotkey();
         CheckConflicts();
+        _overlay.ApplyConfig(_config);
         _overlay.RefreshWindows();
         MessageBox.Show("Окна обновлены и настройки сохранены.", "OpenSpace", MessageBoxButton.OK, MessageBoxImage.Information);
     }
@@ -207,6 +225,23 @@ public partial class LauncherWindow : Window
     private void ExitButton_Click(object sender, RoutedEventArgs e)
     {
         ShutdownApp();
+    }
+
+    private void BrowseDesktopIconsFolderButton_Click(object sender, RoutedEventArgs e)
+    {
+        using var dialog = new FolderBrowserDialog
+        {
+            Description = "Выберите папку с иконками",
+            ShowNewFolderButton = true
+        };
+
+        if (!string.IsNullOrWhiteSpace(DesktopIconsFolderTextBox.Text) && Directory.Exists(DesktopIconsFolderTextBox.Text))
+            dialog.SelectedPath = DesktopIconsFolderTextBox.Text;
+
+        if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+        {
+            DesktopIconsFolderTextBox.Text = dialog.SelectedPath;
+        }
     }
 
     private void TrayIcon_DoubleClick(object? sender, EventArgs e)

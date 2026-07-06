@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Windows;
 
 namespace OpenSpace.Core;
 
@@ -7,35 +8,99 @@ public sealed class SpatialCanvas
     private readonly List<SpatialWindow> _windows = new();
 
     public IReadOnlyList<SpatialWindow> Windows => _windows;
+    public DesktopIconArea? IconArea { get; private set; }
+    public LayoutMode LayoutMode { get; set; } = LayoutMode.FreeGrid;
 
     public SpatialWindow? SelectedWindow { get; private set; }
 
-    public void LoadWindows(IEnumerable<SpatialWindow> windows)
+    public void LoadWindows(IEnumerable<SpatialWindow> windows, DesktopIconArea? iconArea = null)
     {
         _windows.Clear();
         _windows.AddRange(windows);
+        IconArea = iconArea;
 
-        // Normalize positions so the minimum is near (0,0) while preserving relative layout.
         if (_windows.Count > 0)
         {
-            float minX = _windows.Min(w => w.ScreenBounds.Left);
-            float minY = _windows.Min(w => w.ScreenBounds.Top);
+            if (LayoutMode == LayoutMode.FreeGrid)
+                ArrangeFreeGrid();
+            else
+                ArrangeFromScreenCoordinates();
+        }
 
-            foreach (var window in _windows)
+        SelectedWindow = _windows.FirstOrDefault();
+        if (SelectedWindow != null)
+            SelectedWindow.IsSelected = true;
+    }
+
+    private void ArrangeFromScreenCoordinates()
+    {
+        float minX = _windows.Min(w => w.ScreenBounds.Left);
+        float minY = _windows.Min(w => w.ScreenBounds.Top);
+
+        foreach (var window in _windows)
+        {
+            window.PlanePosition = new Vector2(
+                window.ScreenBounds.Left - minX,
+                window.ScreenBounds.Top - minY);
+            window.PlaneSize = new Vector2(
+                window.ScreenBounds.Width,
+                window.ScreenBounds.Height);
+        }
+    }
+
+    private void ArrangeFreeGrid()
+    {
+        float maxW = Math.Min(_windows.Max(w => w.ScreenBounds.Width), 1400f);
+        float maxH = Math.Min(_windows.Max(w => w.ScreenBounds.Height), 900f);
+
+        const float hGap = 200f;
+        const float vGap = 150f;
+
+        float cellW = maxW + hGap;
+        float cellH = maxH + vGap;
+
+        int count = _windows.Count;
+        double aspect = SystemParameters.PrimaryScreenWidth / SystemParameters.PrimaryScreenHeight;
+
+        int holeCols = 0;
+        int holeRows = 0;
+        if (IconArea != null && IconArea.Size.X > 0 && IconArea.Size.Y > 0)
+        {
+            holeCols = Math.Max(1, (int)Math.Ceiling(IconArea.Size.X / cellW));
+            holeRows = Math.Max(1, (int)Math.Ceiling(IconArea.Size.Y / cellH));
+        }
+
+        int columns = Math.Max(holeCols + 2, (int)Math.Ceiling(Math.Sqrt(count * aspect)));
+        int cellsNeeded = count + holeCols * holeRows;
+        int rows = (int)Math.Ceiling(cellsNeeded / (double)columns);
+
+        float gridW = columns * cellW;
+        float gridH = rows * cellH;
+        var origin = new Vector2(-gridW / 2, -gridH / 2);
+
+        int leftHole = (columns - holeCols) / 2;
+        int topHole = (rows - holeRows) / 2;
+
+        int index = 0;
+        for (int r = 0; r < rows && index < count; r++)
+        {
+            for (int c = 0; c < columns && index < count; c++)
             {
+                if (c >= leftHole && c < leftHole + holeCols &&
+                    r >= topHole && r < topHole + holeRows)
+                {
+                    continue;
+                }
+
+                var window = _windows[index++];
                 window.PlanePosition = new Vector2(
-                    window.ScreenBounds.Left - minX,
-                    window.ScreenBounds.Top - minY);
+                    origin.X + c * cellW + hGap / 2,
+                    origin.Y + r * cellH + vGap / 2);
                 window.PlaneSize = new Vector2(
                     window.ScreenBounds.Width,
                     window.ScreenBounds.Height);
             }
         }
-
-        SelectedWindow = _windows.FirstOrDefault();
-        SelectedWindow ??= _windows.FirstOrDefault();
-        if (SelectedWindow != null)
-            SelectedWindow.IsSelected = true;
     }
 
     public void SelectNext()
@@ -104,17 +169,37 @@ public sealed class SpatialCanvas
     {
         _windows.Clear();
         SelectedWindow = null;
+        IconArea = null;
     }
 
     public Rect2 GetBounds()
     {
-        if (_windows.Count == 0)
-            return new Rect2(Vector2.Zero, Vector2.Zero);
+        float minX = float.MaxValue;
+        float minY = float.MaxValue;
+        float maxX = float.MinValue;
+        float maxY = float.MinValue;
+        bool has = false;
 
-        float minX = _windows.Min(w => w.PlanePosition.X);
-        float minY = _windows.Min(w => w.PlanePosition.Y);
-        float maxX = _windows.Max(w => w.PlanePosition.X + w.PlaneSize.X);
-        float maxY = _windows.Max(w => w.PlanePosition.Y + w.PlaneSize.Y);
+        foreach (var window in _windows)
+        {
+            minX = Math.Min(minX, window.PlanePosition.X);
+            minY = Math.Min(minY, window.PlanePosition.Y);
+            maxX = Math.Max(maxX, window.PlanePosition.X + window.PlaneSize.X);
+            maxY = Math.Max(maxY, window.PlanePosition.Y + window.PlaneSize.Y);
+            has = true;
+        }
+
+        if (IconArea != null && IconArea.Size.X > 0 && IconArea.Size.Y > 0)
+        {
+            minX = Math.Min(minX, IconArea.Position.X);
+            minY = Math.Min(minY, IconArea.Position.Y);
+            maxX = Math.Max(maxX, IconArea.Position.X + IconArea.Size.X);
+            maxY = Math.Max(maxY, IconArea.Position.Y + IconArea.Size.Y);
+            has = true;
+        }
+
+        if (!has)
+            return new Rect2(Vector2.Zero, Vector2.Zero);
 
         return new Rect2(new Vector2(minX, minY), new Vector2(maxX - minX, maxY - minY));
     }

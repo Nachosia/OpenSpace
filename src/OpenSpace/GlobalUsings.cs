@@ -9,3 +9,8 @@ global using System.IO;
 global using System.Windows.Interop;
 global using MessageBox = System.Windows.MessageBox;
 global using Cursors = System.Windows.Input.Cursors;
+global using Imaging = System.Windows.Media.Imaging;
+global using Brushes = System.Windows.Media.Brushes;
+global using ScaleTransform = System.Windows.Media.ScaleTransform;
+global using InteropImaging = System.Windows.Interop.Imaging;
+global using Canvas = System.Windows.Controls.Canvas;

@@ -22,6 +22,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0"
@@ -113,6 +114,38 @@
                      Text="500"
                      Width="60"
                      VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="7"
+                    Orientation="Vertical"
+                    Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal"
+                        Margin="0,0,0,5">
+                <TextBlock Text="Расположение окон:"
+                           VerticalAlignment="Center"
+                           Margin="0,0,10,0"/>
+                <ComboBox x:Name="LayoutModeComboBox"
+                           Width="160"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <CheckBox x:Name="ShowDesktopIconsCheckBox"
+                       Content="Показывать иконки рабочего стола в центре"
+                       Margin="0,0,0,5"/>
+
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Папка иконок:"
+                           VerticalAlignment="Center"
+                           Margin="0,0,5,0"/>
+                <TextBox x:Name="DesktopIconsFolderTextBox"
+                         Width="220"
+                         VerticalAlignment="Center"/>
+                <Button x:Name="BrowseDesktopIconsFolderButton"
+                         Content="Обзор..."
+                         Width="70"
+                         Margin="5,0,0,0"
+                         Click="BrowseDesktopIconsFolderButton_Click"/>
+            </StackPanel>
         </StackPanel>
 
         <TextBlock Grid.Row="8"
