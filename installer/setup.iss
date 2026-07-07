@@ -1,5 +1,5 @@
 #define MyAppName "OpenSpace"
-#define MyAppVersion "0.0.14"
+#define MyAppVersion "0.0.15"
 #define MyAppPublisher "Nachosia"
 #define MyAppURL "https://github.com/Nachosia/OpenSpace"
 #define MyAppExeName "OpenSpace.exe"
@@ -18,7 +18,7 @@ LicenseFile=
 InfoBeforeFile=
 InfoAfterFile=
 OutputDir=..\..\publish-installer
-OutputBaseFilename=OpenSpace-0.0.14-setup
+OutputBaseFilename=OpenSpace-0.0.15-setup
 SetupIconFile=
 Compression=lzma
 SolidCompression=yes
@@ -34,8 +34,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "build\\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\\*.pdb"; DestDir: "{app}"; Flags: ignoreversion
+Source: "build\\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{autoprograms}\\{#MyAppName}"; Filename: "{app}\\{#MyAppExeName}"
